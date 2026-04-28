@@ -39,3 +39,8 @@ io:
   out_dir: checkpoints/
   log_interval: 10
   save_interval: 5000
+
+wandb:
+  project: llm-from-scratch
+  run_name: null
+  enabled: true
