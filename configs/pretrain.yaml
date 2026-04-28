@@ -1,0 +1,41 @@
+model:
+  vocab_size: 50304
+  d_model: 768
+  n_heads: 12
+  n_layers: 12
+  max_seq_len: 2048
+  dropout: 0.1
+
+data:
+  train_bin: data/train.bin
+  val_bin: data/val.bin
+  block_size: 2048
+
+optim:
+  lr: 3.0e-4
+  min_lr: 3.0e-5
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+
+schedule:
+  warmup_steps: 2000
+  max_steps: 50000
+
+train:
+  batch_size: 32
+  grad_accum_steps: 8
+  dtype: bfloat16
+  compile: true
+  seed: 42
+
+eval:
+  eval_interval: 1000
+  eval_iters: 100
+
+io:
+  data_dir: data/
+  out_dir: checkpoints/
+  log_interval: 10
+  save_interval: 5000
