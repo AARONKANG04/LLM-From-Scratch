@@ -40,7 +40,24 @@ def pick_device():
 
 def load_model(checkpoint_path: str, device: torch.device):
     ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    model_cfg = ckpt["config"]["model"]
+    if "model_config" in ckpt:
+        # New format (SFT ckpts and pretrain ckpts going forward): explicit model_config.
+        model_cfg = ckpt["model_config"]
+    elif "model" in ckpt.get("config", {}):
+        # Pretrain ckpts: model arch nested under config.
+        model_cfg = ckpt["config"]["model"]
+    elif "init_from" in ckpt:
+        # Older SFT ckpts saved before model_config was embedded: pull arch from
+        # the original pretrain checkpoint.
+        init_ckpt = torch.load(
+            ckpt["init_from"], map_location=device, weights_only=False
+        )
+        model_cfg = init_ckpt["config"]["model"]
+    else:
+        raise ValueError(
+            f"Cannot infer model architecture from checkpoint {checkpoint_path}: "
+            "no 'model_config', 'config.model', or 'init_from' field found."
+        )
     model = Transformer(**model_cfg).to(device)
     model.load_state_dict(ckpt["model"])
     model.eval()

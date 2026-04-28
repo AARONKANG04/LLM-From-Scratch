@@ -100,7 +100,7 @@ def compute_loss_sum(model, batch, device, device_type, autocast_ctx):
     return loss
 
 
-def save_ckpt(path, raw_model, optimizer, step, epoch, cfg, init_from):
+def save_ckpt(path, raw_model, optimizer, step, epoch, cfg, model_cfg, init_from):
     torch.save(
         {
             "model": raw_model.state_dict(),
@@ -108,6 +108,7 @@ def save_ckpt(path, raw_model, optimizer, step, epoch, cfg, init_from):
             "step": step,
             "epoch": epoch,
             "config": asdict(cfg),
+            "model_config": model_cfg,  # arch from --init-from, embedded so the SFT ckpt is self-contained
             "init_from": init_from,
         },
         path,
@@ -274,14 +275,14 @@ def main():
             )
             save_ckpt(
                 ckpt_path, raw_model, optimizer, step - 1, epoch + 1, cfg,
-                args.init_from,
+                model_cfg, args.init_from,
             )
             tqdm.write(f"saved {ckpt_path}")
 
     final_path = os.path.join(cfg.io.out_dir, "ckpt_sft_final.pt")
     save_ckpt(
         final_path, raw_model, optimizer, max_steps - 1, cfg.schedule.epochs,
-        cfg, args.init_from,
+        cfg, model_cfg, args.init_from,
     )
     tqdm.write(f"saved {final_path}")
 
