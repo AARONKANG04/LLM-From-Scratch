@@ -46,11 +46,25 @@ def generate(
     temperature: float,
     top_k: int | None,
     top_p: float | None,
+    repetition_penalty: float,
     eos_id: int,
 ) -> torch.Tensor:
     for _ in range(max_new_tokens):
         idx_cond = idx[:, -max_seq_len:]
         logits = model(idx_cond)[:, -1, :]
+
+        if repetition_penalty != 1.0:
+            # Keskar et al. 2019: scale logits of tokens already in context.
+            # Positive logits get divided, negative logits get multiplied — both
+            # push the value toward zero / away from being sampled.
+            seen = idx_cond
+            seen_logits = logits.gather(-1, seen)
+            seen_logits = torch.where(
+                seen_logits > 0,
+                seen_logits / repetition_penalty,
+                seen_logits * repetition_penalty,
+            )
+            logits.scatter_(-1, seen, seen_logits)
 
         if temperature == 0.0:
             next_id = logits.argmax(dim=-1, keepdim=True)
@@ -95,6 +109,7 @@ def main():
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--top-k", type=int, default=None)
     parser.add_argument("--top-p", type=float, default=None)
+    parser.add_argument("--repetition-penalty", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()
 
@@ -121,6 +136,7 @@ def main():
         temperature=args.temperature,
         top_k=args.top_k,
         top_p=args.top_p,
+        repetition_penalty=args.repetition_penalty,
         eos_id=EOS_ID,
     )
 
