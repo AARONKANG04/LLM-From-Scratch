@@ -4,15 +4,15 @@ optim:
   weight_decay: 0.0
   beta1: 0.9
   beta2: 0.95
-  grad_clip: 1.0
+  grad_clip: 2.0   # SFT on this 124M model produces steady-state grad_norm ~3; tight clip throttles effective LR
 
 schedule:
   warmup_steps: 150
   epochs: 3
 
 train:
-  batch_size: 16          # micro-batch; 4090 ceiling at seq_len 1024
-  grad_accum_steps: 2     # effective batch = 32
+  batch_size: 8           # micro-batch; B=16 OOMs on 4090 when a batch hits T=1024
+  grad_accum_steps: 4     # effective batch = 32
   max_seq_len: 1024
   dtype: bfloat16
   compile: true

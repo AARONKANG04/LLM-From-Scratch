@@ -1,18 +1,28 @@
 """Generate text from a pretrain checkpoint.
 
-    python inference.py \\
+Run from the repo root:
+
+    python -m pretrain.inference \\
         --checkpoint checkpoints/pretrain/ckpt_final.pt \\
         --prompt "The quick brown fox" \\
         --max-new-tokens 64 \\
         --temperature 0.8 \\
         --top-k 50
+
+Also exports `pick_device`, `load_model`, `generate`, `EOS_ID` for reuse by
+sibling stages (e.g., sft/inference.py).
 """
 
 import argparse
+import sys
+from pathlib import Path
 
 import tiktoken
 import torch
 import torch.nn.functional as F
+
+# Allow `python pretrain/inference.py` from repo root in addition to `-m pretrain.inference`.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from model import Transformer
 
