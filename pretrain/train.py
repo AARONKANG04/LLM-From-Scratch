@@ -178,14 +178,22 @@ def main():
     t_log = time.time()
     model.train()
 
+    # Prefetch the first batch so the very first microbatch overlaps with no setup cost.
+    next_x, next_y = get_batch(train_ds, cfg.train.batch_size, device, device_type)
+
     for step in pbar:
         lr = get_lr(step, cfg)
         for g in optimizer.param_groups:
             g["lr"] = lr
 
-        loss_accum = 0.0
+        # Accumulate loss as a tensor on-device — no per-microbatch sync.
+        loss_accum = torch.zeros((), device=device)
         for _ in range(cfg.train.grad_accum_steps):
-            x, y = get_batch(train_ds, cfg.train.batch_size, device, device_type)
+            x, y = next_x, next_y
+            # Kick off the next batch's host->device copy while the GPU is busy.
+            next_x, next_y = get_batch(
+                train_ds, cfg.train.batch_size, device, device_type
+            )
             with autocast_ctx:
                 logits = model(x)
                 loss = F.cross_entropy(
@@ -195,7 +203,7 @@ def main():
                 scaler.scale(loss).backward()
             else:
                 loss.backward()
-            loss_accum += loss.item()
+            loss_accum = loss_accum + loss.detach()
 
         if scaler is not None:
             scaler.unscale_(optimizer)
@@ -214,12 +222,13 @@ def main():
             tok_s = (
                 tokens_per_step * cfg.io.log_interval / dt if dt > 0 else 0.0
             )
+            loss_value = loss_accum.item()  # only sync at log time
             pbar.set_postfix(
-                loss=f"{loss_accum:.4f}", lr=f"{lr:.2e}", tok_s=int(tok_s)
+                loss=f"{loss_value:.4f}", lr=f"{lr:.2e}", tok_s=int(tok_s)
             )
             wandb.log(
                 {
-                    "train/loss": loss_accum,
+                    "train/loss": loss_value,
                     "train/lr": lr,
                     "train/tok_per_sec": tok_s,
                     "train/grad_norm": float(grad_norm),

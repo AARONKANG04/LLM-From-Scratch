@@ -3,13 +3,13 @@ model:
   d_model: 768
   n_heads: 12
   n_layers: 12
-  max_seq_len: 2048
+  max_seq_len: 1024
   dropout: 0.1
 
 data:
   train_bin: data/train.bin
   val_bin: data/val.bin
-  block_size: 2048
+  block_size: 1024
 
 optim:
   lr: 3.0e-4
@@ -24,7 +24,7 @@ schedule:
   max_steps: 50000
 
 train:
-  batch_size: 32
+  batch_size: 16
   grad_accum_steps: 8
   dtype: bfloat16
   compile: true
