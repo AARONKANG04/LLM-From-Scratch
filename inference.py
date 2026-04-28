@@ -1,7 +1,7 @@
 """Generate text from a pretrain checkpoint.
 
     python inference.py \\
-        --checkpoint checkpoints/ckpt_final.pt \\
+        --checkpoint checkpoints/pretrain/ckpt_final.pt \\
         --prompt "The quick brown fox" \\
         --max-new-tokens 64 \\
         --temperature 0.8 \\

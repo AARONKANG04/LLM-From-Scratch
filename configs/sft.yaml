@@ -1,0 +1,30 @@
+optim:
+  lr: 2.0e-5
+  min_lr: 2.0e-6
+  weight_decay: 0.0
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+
+schedule:
+  warmup_steps: 150
+  epochs: 3
+
+train:
+  batch_size: 16          # micro-batch; 4090 ceiling at seq_len 1024
+  grad_accum_steps: 2     # effective batch = 32
+  max_seq_len: 1024
+  dtype: bfloat16
+  compile: true
+  seed: 42
+  num_workers: 2
+
+io:
+  out_dir: checkpoints/sft/
+  log_interval: 10
+  save_at_epoch_end: true
+
+wandb:
+  project: llm-from-scratch
+  run_name: sft-alpaca
+  enabled: true

@@ -36,7 +36,7 @@ eval:
 
 io:
   data_dir: data/
-  out_dir: checkpoints/
+  out_dir: checkpoints/pretrain/
   log_interval: 10
   save_interval: 5000
 

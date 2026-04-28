@@ -3,7 +3,7 @@
 Run from the repo root:
 
     python -m pretrain.train --config configs/pretrain.yaml
-    python -m pretrain.train --resume checkpoints/ckpt_5000.pt
+    python -m pretrain.train --resume checkpoints/pretrain/ckpt_5000.pt
 """
 
 import argparse
