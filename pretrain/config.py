@@ -41,6 +41,8 @@ class OptimConfig:
 class ScheduleConfig:
     warmup_steps: int
     max_steps: int
+    anchor_step: int = 0
+    re_peak_lr: Optional[float] = None
 
 
 @dataclass

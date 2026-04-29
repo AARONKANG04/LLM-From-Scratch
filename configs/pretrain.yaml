@@ -20,8 +20,10 @@ optim:
   grad_clip: 1.0
 
 schedule:
-  warmup_steps: 2000
-  max_steps: 50000
+  warmup_steps: 500
+  max_steps: 150000
+  anchor_step: 50000
+  re_peak_lr: 1.0e-4
 
 train:
   batch_size: 16

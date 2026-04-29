@@ -50,15 +50,26 @@ def resolve_dtype(desired: str, device_type: str) -> torch.dtype:
 
 
 def get_lr(step: int, cfg: Config) -> float:
-    if step < cfg.schedule.warmup_steps:
-        return cfg.optim.lr * (step + 1) / cfg.schedule.warmup_steps
+    anchor = cfg.schedule.anchor_step
+    peak = (
+        cfg.schedule.re_peak_lr
+        if anchor > 0 and cfg.schedule.re_peak_lr is not None
+        else cfg.optim.lr
+    )
+    warmup_end = anchor + cfg.schedule.warmup_steps
+
+    if step < anchor:
+        return cfg.optim.min_lr
+    if step < warmup_end:
+        if anchor == 0:
+            return peak * (step + 1) / cfg.schedule.warmup_steps
+        frac = (step - anchor + 1) / cfg.schedule.warmup_steps
+        return cfg.optim.min_lr + frac * (peak - cfg.optim.min_lr)
     if step >= cfg.schedule.max_steps:
         return cfg.optim.min_lr
-    progress = (step - cfg.schedule.warmup_steps) / max(
-        1, cfg.schedule.max_steps - cfg.schedule.warmup_steps
-    )
+    progress = (step - warmup_end) / max(1, cfg.schedule.max_steps - warmup_end)
     coeff = 0.5 * (1.0 + math.cos(math.pi * progress))
-    return cfg.optim.min_lr + coeff * (cfg.optim.lr - cfg.optim.min_lr)
+    return cfg.optim.min_lr + coeff * (peak - cfg.optim.min_lr)
 
 
 def make_param_groups(model: torch.nn.Module, weight_decay: float):
@@ -107,6 +118,16 @@ def main():
     args = parser.parse_args()
 
     cfg = Config.from_yaml(args.config)
+
+    if args.resume is None and (
+        cfg.schedule.anchor_step != 0 or cfg.schedule.re_peak_lr is not None
+    ):
+        print(
+            f"fresh run: ignoring anchor_step={cfg.schedule.anchor_step} "
+            f"and re_peak_lr={cfg.schedule.re_peak_lr} from config"
+        )
+        cfg.schedule.anchor_step = 0
+        cfg.schedule.re_peak_lr = None
 
     torch.manual_seed(cfg.train.seed)
     np.random.seed(cfg.train.seed)
